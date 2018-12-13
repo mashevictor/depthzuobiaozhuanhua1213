@@ -31,6 +31,11 @@ unsigned int idx = threadIdx.x+(blockIdx.x*(blockDim.x*blockDim.y));
   unsigned int b = idx%3;
 dest2[INDEX(a, b)] = (0*r_img[INDEX(a, b)]+288.780*g_img[INDEX(a, b)]+124.968*b_img[INDEX(a, b)]);
 }
+__global__ void multiply_them(float *dest, float *a, float *b,float *c)
+{
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  dest[i] = a[i] * b[i]/c[i];
+}
 
 """
     )
@@ -54,11 +59,25 @@ dest2=r_img
 rgb2gray = mod.get_function("rgb2gray")
 rgb2gray(drv.Out(dest), drv.In(r_img), drv.In(g_img),drv.In(b_img),block=(1024, 1, 1), grid=(75, 1, 1))
 #dest=np.reshape(dest,(3,3), order='F')
-print dest
+#print dest
+abc=np.array(dest)
 rgb2gray2 = mod.get_function("rgb2gray2")
 rgb2gray2(drv.Out(dest2), drv.In(r_img), drv.In(g_img),drv.In(b_img),block=(1024, 1, 1), grid=(75, 1, 1))
 #dest2=np.reshape(dest2,(3,3), order='F')
 print dest2
+destzuizhong=[]
+print abc
+destzuizhong=np.dstack((abc,dest2))
+print destzuizhong
+print destzuizhong.shape
 print ("以上代码解决了在cuda里面进行深度信息坐标转化问题success!")
-#p.imshow(dest)
-#p.show()
+a = np.array([[1,2],[3,4]]).astype(np.float32)
+b = np.array([[10,20],[30,40]]).astype(np.float32)
+c = np.array([[1,2],[3,4]]).astype(np.float32)
+multiply_them = mod.get_function("multiply_them")
+destlast = np.zeros_like(a)
+multiply_them(
+        drv.Out(destlast), drv.In(a), drv.In(b),drv.In(c),
+        block=(1024, 1, 1), grid=(75, 1, 1))
+print ("dest")
+print(destlast)
